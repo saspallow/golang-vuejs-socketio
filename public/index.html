@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Golang and VueJs Realtime</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" media="screen" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.js"></script>
+</head>
+<body>
+
+  <div id="app">
+    <div class="columns is-mobile" v-if="!isEnterName">
+      <div class="column is-half is-offset-one-quarter">
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Your name: <strong class="has-text-success">{{ name }}</strong></label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <input class="input is-success" type="text" placeholder="Please enter your name" ref="name" @keyup.enter="enterName()">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template v-if="isEnterName">
+      <ul class="menu-list">
+        <li v-for="m in messages"><a><span>{{ m.text.name }}: {{  m.text.msg }}</span> <span class="tag is-danger">{{ m.date }}</span></a></li>
+      </ul>
+      <br>
+      <input class="input" type="text" v-model="message" autocomplete="off" @keyup.enter="sendMessage()">
+    </template>
+  </div>
+  <script>
+    var socket = io()
+    new Vue({
+      el: '#app',
+      delimiters: ['{{', '}}'],
+      created () {
+        var _this = this
+        // Receive
+        socket.on('chat message', function (message) {
+          _this.messages.push({
+            text: JSON.parse(message),
+            date: new Date().toLocaleString()
+          })
+        })
+      },
+      data: {
+        name: '',
+        message: '',
+        messages: [],
+        isEnterName: false
+      },
+      methods: {
+        sendMessage () {
+          socket.emit('chat message', JSON.stringify({
+            name: this.name,
+            msg: this.message
+          }))
+          this.message = ''
+        },
+        enterName () {
+          if (!this.$refs.name.value) {
+            return
+          }
+          this.name = this.$refs.name.value
+          this.isEnterName = true
+        }
+      }
+    })
+  </script>
+</body>
+</html>
